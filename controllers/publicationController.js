@@ -5,6 +5,7 @@ const {
     isPublicationAuthor,
 } = require("../middlewares/publicationMiddleware");
 const publicationService = require("../services/publicationService");
+const userService = require("../services/userService");
 const { getErrorMessage } = require("../utils/errorHelpers");
 
 router.get("/", async (req, res) => {
@@ -17,7 +18,7 @@ router.get("/:publicationId/details", async (req, res) => {
         .getOneDetailed(req.params.publicationId)
         .lean();
     const isAuthor = publication.author._id == req.user?._id;
-    const isShared = publication.usersShared.includes(req.user?._id);
+    const isShared = publication.usersShared.some((x) => x._id == req.user._id);
 
     res.render("publication/details", { ...publication, isAuthor, isShared });
 });
@@ -70,7 +71,10 @@ router.post("/create", isAuth, async (req, res) => {
     const publicationData = { ...req.body, author: req.user._id };
 
     try {
-        await publicationService.create(publicationData);
+        const createdPublication = await publicationService.create(
+            publicationData
+        );
+        await userService.addPublication(req.user._id, createdPublication._id);
 
         res.redirect("/publications");
     } catch (error) {
@@ -82,12 +86,18 @@ router.post("/create", isAuth, async (req, res) => {
 });
 
 router.get("/:publicationId/share", isAuth, async (req, res) => {
-    const publication = await publicationService.getOne(req.params.publicationId);
+    const publication = await publicationService.getOne(
+        req.params.publicationId
+    );
+    const user = await userService.getOne(req.user._id);
 
     publication.usersShared.push(req.user._id);
-    await publication.save();
+    user.shares.push(publication);
 
-    res.redirect('/');
+    await publication.save();
+    await user.save();
+
+    res.redirect("/");
 });
 
 module.exports = router;

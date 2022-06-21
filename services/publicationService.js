@@ -1,6 +1,6 @@
 const Publication = require("../models/Publication");
 
-exports.create = (publicationData) => Publication.create(publicationData);
+exports.create = async (publicationData) => await Publication.create(publicationData);
 
 exports.getAll = () => Publication.find();
 
@@ -18,3 +18,4 @@ exports.update = (publicationId, publicationData) =>
 
 exports.delete = (publicationId) =>
     Publication.deleteOne({ _id: publicationId });
+
