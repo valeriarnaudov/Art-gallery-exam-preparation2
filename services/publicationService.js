@@ -10,4 +10,11 @@ exports.getOneDetailed = (publicationId) =>
     Publication.findById(publicationId).populate("author");
 
 exports.update = (publicationId, publicationData) =>
-    Publication.updateOne({ _id: publicationId }, { $set: publicationData }, { runValidators: true });
+    Publication.updateOne(
+        { _id: publicationId },
+        { $set: publicationData },
+        { runValidators: true }
+    );
+
+exports.delete = (publicationId) =>
+    Publication.deleteOne({ _id: publicationId });
