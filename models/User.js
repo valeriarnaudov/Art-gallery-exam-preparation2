@@ -14,7 +14,16 @@ const userSchema = new mongoose.Schema({
     },
     adress: {
         type: String,
+        required: [true, "Adress is required"],
     },
+    publications: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Publication',
+    }],
+    // sharedPublications: [{
+    //     type: mongoose.Schema.Types.ObjectId,
+    //     ref: 'Publication',
+    // }],
 });
 
 userSchema.pre("save", function (next) {
