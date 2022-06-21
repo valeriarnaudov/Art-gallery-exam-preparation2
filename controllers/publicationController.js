@@ -1,6 +1,11 @@
 const router = require("express").Router();
 const { isAuth } = require("../middlewares/authMiddleware");
+const {
+    preloadPublication,
+    isPublicationAuthor,
+} = require("../middlewares/publicationMiddleware");
 const publicationService = require("../services/publicationService");
+const { getErrorMessage } = require("../utils/errorHelpers");
 
 router.get("/", async (req, res) => {
     const publications = await publicationService.getAll().lean();
@@ -13,8 +18,37 @@ router.get("/:publicationId/details", async (req, res) => {
         .lean();
     const isAuthor = publication.author._id == req.user?._id;
 
-    res.render("publication/details", { ...publication,isAuthor });
+    res.render("publication/details", { ...publication, isAuthor });
 });
+
+router.get(
+    "/:publicationId/edit",
+    isAuth,
+    preloadPublication,
+    isPublicationAuthor,
+    (req, res) => {
+        res.render("publication/edit", { ...req.publication });
+    }
+);
+
+router.post(
+    "/:publicationId/edit",
+    isAuth,
+    preloadPublication,
+    isPublicationAuthor,
+    async (req, res) => {
+        try {
+            await publicationService.update(req.params.publicationId, req.body);
+
+            res.redirect(`/publications/${req.params.publicationId}/details`);
+        } catch (error) {
+            res.redirect(`/publications/edit`, {
+                ...req.body,
+                error: getErrorMessage(error),
+            });
+        }
+    }
+);
 
 router.get("/create", isAuth, (req, res) => {
     res.render("publication/create");
@@ -23,9 +57,16 @@ router.get("/create", isAuth, (req, res) => {
 router.post("/create", isAuth, async (req, res) => {
     const publicationData = { ...req.body, author: req.user._id };
 
-    await publicationService.create(publicationData);
+    try {
+        await publicationService.create(publicationData);
 
-    res.redirect("/publications");
+        res.redirect("/publications");
+    } catch (error) {
+        res.render("publication/create", {
+            ...req.body,
+            error: getErrorMessage(error),
+        });
+    }
 });
 
 module.exports = router;
